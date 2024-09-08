@@ -1,3 +1,14 @@
+def normalize-text [] {
+    str replace -ra '\\r?\\n\s*' (char nl)
+    | str replace -a '&mdash;' '--'
+    | str replace -a '&amp;' '&'
+    | str replace -a "\t" ' '
+    | str replace -a '\n' (char nl) # Thanissaro Bhikkhu
+    | lines
+    | str trim
+    | to text
+}
+
 def compose_dhamma [
     path: path
     translator: string
@@ -7,16 +18,8 @@ def compose_dhamma [
     let verses = open text_dhammapada.json | items {|k v| {verse: $k chapter: $v.chapter}} | into int chapter verse
     let verses_text = open $path
         | items {|k v| {verse: $k, verse_text: $v}}
-        | update verse_text {
-            str replace -ra '\\r?\\n\s*' (char nl)
-            | str replace -a '&mdash;' '--'
-            | str replace -a '&amp;' '&'
-            | str replace -a "\t" ' '
-            | str replace -a '\n' (char nl) # Thanissaro Bhikkhu
-            | lines
-            | str trim
-            | to text
-        } | into int verse
+        | update verse_text { normalize-text }
+        | into int verse
 
     let dhamma_table = $chapters | join $verses chapter | join $verses_text verse
 
