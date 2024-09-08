@@ -49,3 +49,23 @@ glob trans*.json
 | insert fields {|i| $translations | get $i.label | select name license | rename translator}
 | flatten
 | each {|i| compose_dhamma $i.path $i.translator $i.license | save -f $'../yaml/dhammapada_($i.label).yaml'}
+
+
+let chapters = open meta_chapters.json | items {|k v| {chapter: $k, chapter_title: $v.pali}}
+
+open text_dhammapada.json
+| items {|k v| {verse: $k chapter: $v.chapter verse_text: $v.text}}
+| update verse_text {normalize-text}
+| join $chapters chapter
+| group-by chapter
+| values
+| each {|i|
+    {$i.0.chapter: {
+        number: ($i.0.chapter | into int),
+        title: $i.0.chapter_title
+        verses: ($i | each {|v| {number: ($v.verse | into int) verse: $v.verse_text}})
+    }}
+} | values
+| flatten
+| {title: Dhammapada chapters: $in}
+| save -f '../yaml/dhammapada_pali.yaml'
